@@ -1,0 +1,533 @@
+<title>THOR Turboofen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: technisches Zeichnungsblatt – Schriftfeld oben, Schema als Hauptblatt, darunter Rechen- und Prüfteile in einer Spalte */
+:root {
+  --paper: #f3f5f5;
+  --sheet: #ffffff;
+  --ink: #172026;
+  --muted: #56656c;
+  --rule: #c7d0d4;
+  --tint: #e8eded;
+  --air: #2a6a9a;
+  --gas: #c04a14;
+  --water: #0e7c74;
+  --water-tint: #d3ece9;
+  --fuel: #8a5a2b;
+  --fuel-tint: #efe2d2;
+  --warn: #b42318;
+  --warn-tint: #fbe9e7;
+  --f-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1518; --sheet: #151e22; --ink: #e2e9eb; --muted: #95a5ac; --rule: #2c3a41; --tint: #1c282d;
+    --air: #74b3e2; --gas: #f08a4b; --water: #4ec5b9; --water-tint: #12322f; --fuel: #cf9f68; --fuel-tint: #34281b;
+    --warn: #f7836f; --warn-tint: #3a1d19; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1518; --sheet: #151e22; --ink: #e2e9eb; --muted: #95a5ac; --rule: #2c3a41; --tint: #1c282d;
+  --air: #74b3e2; --gas: #f08a4b; --water: #4ec5b9; --water-tint: #12322f; --fuel: #cf9f68; --fuel-tint: #34281b;
+  --warn: #f7836f; --warn-tint: #3a1d19; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.6 var(--f-body); }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: 0.01em; }
+h1 { font-size: clamp(40px, 7vw, 64px); line-height: 0.95; font-weight: 700; }
+h2 { font-size: 28px; line-height: 1.1; }
+h3 { font-size: 20px; }
+p { margin: 0; max-width: 68ch; }
+.label { font: 500 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+section { display: grid; gap: 16px; min-width: 0; }
+.sec-head { display: grid; gap: 6px; border-top: 2px solid var(--ink); padding-top: 12px; }
+
+/* Schriftfeld */
+.titleblock { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; }
+.titleblock .sub { font-size: 18px; color: var(--muted); margin-top: 8px; }
+.tb-grid { display: grid; grid-template-columns: repeat(3, auto); border: 1.5px solid var(--ink); background: var(--sheet); font-family: var(--f-mono); font-size: 12px; }
+.tb-grid > div { padding: 6px 12px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); display: grid; gap: 2px; }
+.tb-grid > div:nth-child(3n) { border-right: 0; }
+.tb-grid > div:nth-last-child(-n+3) { border-bottom: 0; }
+.tb-grid span { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+@media (max-width: 720px) { .titleblock { grid-template-columns: 1fr; } .tb-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.sheet { background: var(--sheet); border: 1.5px solid var(--ink); padding: 12px; overflow-x: auto; }
+.sheet svg { display: block; width: 100%; min-width: 760px; height: auto; }
+.sheet.narrow svg { min-width: 520px; max-width: 680px; margin: 0 auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 13px; }
+.legend i { display: inline-block; width: 22px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 6px; }
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 13px/1.3 var(--f-mono); }
+.chain b { font-weight: 500; padding: 4px 8px; border: 1px solid var(--water); color: var(--water); background: var(--water-tint); }
+.chain em { font-style: normal; color: var(--muted); }
+
+/* SVG */
+svg text { font-family: var(--f-mono); font-size: 11px; fill: var(--ink); }
+svg .t-s { fill: var(--muted); font-size: 10.5px; }
+svg .t-b { font-family: var(--f-display); font-size: 15px; font-weight: 600; }
+svg .t-c { text-anchor: middle; }
+svg .t-e { text-anchor: end; }
+svg .t-gas { fill: var(--gas); }
+svg .comp { fill: var(--sheet); stroke: var(--ink); stroke-width: 1.5; }
+svg .turbo { fill: var(--tint); stroke: var(--ink); stroke-width: 1.5; }
+svg .shaft { fill: var(--ink); }
+svg .air { fill: none; stroke: var(--air); stroke-width: 3; }
+svg .gas { fill: none; stroke: var(--gas); stroke-width: 3.5; }
+svg .fuel { fill: none; stroke: var(--fuel); stroke-width: 3; }
+svg .water { fill: none; stroke: var(--water); stroke-width: 2.5; }
+svg .insul { fill: none; stroke: var(--rule); stroke-width: 13; }
+svg .pjacket { fill: none; stroke: var(--water-tint); stroke-width: 14; }
+svg .pjacket-edge { fill: none; stroke: var(--water); stroke-width: 15.5; }
+svg .jacket { fill: var(--water-tint); stroke: var(--water); stroke-width: 2; }
+svg .keg { fill: var(--sheet); stroke: var(--ink); stroke-width: 2; }
+svg .lining { fill: var(--tint); stroke: var(--muted); stroke-width: 1; }
+svg .zone { fill: var(--sheet); stroke: none; }
+svg .bunker { fill: var(--fuel-tint); stroke: var(--fuel); stroke-width: 1.5; }
+svg .ember { fill: var(--gas); opacity: 0.35; stroke: var(--gas); stroke-width: 1; }
+svg .swirl { fill: none; stroke: var(--gas); stroke-width: 1.5; stroke-dasharray: 5 4; }
+svg .nbk { fill: var(--sheet); stroke: var(--gas); stroke-width: 1.5; stroke-dasharray: 5 3; }
+svg .dot { fill: var(--air); }
+svg .dim { fill: none; stroke: var(--muted); stroke-width: 1; }
+svg .ext { fill: none; stroke: var(--muted); stroke-width: 0.75; stroke-dasharray: 3 3; }
+svg .grate { fill: none; stroke: var(--ink); stroke-width: 2; }
+svg .m-air { fill: var(--air); } svg .m-gas { fill: var(--gas); } svg .m-fuel { fill: var(--fuel); }
+svg .m-water { fill: var(--water); } svg .m-dim { fill: var(--muted); }
+
+/* Tabellen */
+.tbl-wrap { overflow-x: auto; background: var(--sheet); border: 1px solid var(--rule); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 500 11px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); background: var(--tint); }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+tr:last-child td { border-bottom: 0; }
+tr.total td { font-weight: 600; border-top: 2px solid var(--ink); }
+
+.bar { display: flex; height: 26px; border: 1px solid var(--ink); background: var(--sheet); }
+.bar > span { display: block; height: 100%; }
+.bar .b1 { background: var(--water); }
+.bar .b2 { background: var(--water); opacity: 0.6; }
+.bar .b3 { background: var(--muted); opacity: 0.5; }
+.bar-key { display: flex; flex-wrap: wrap; gap: 6px 20px; font: 12px var(--f-mono); color: var(--muted); }
+
+.checks { display: grid; gap: 14px; }
+.check { display: grid; grid-template-columns: 54px 1fr; gap: 16px; padding: 16px; background: var(--sheet); border: 1px solid var(--rule); }
+.check .no { font: 700 34px/1 var(--f-display); color: var(--gas); }
+.check > div { display: grid; gap: 6px; min-width: 0; }
+.check .fix { font-size: 14px; border-left: 3px solid var(--water); padding-left: 10px; }
+.check .fix b { color: var(--water); font-weight: 600; }
+@media (max-width: 520px) { .check { grid-template-columns: 1fr; gap: 8px; } }
+
+.safety { background: var(--warn-tint); border: 1.5px solid var(--warn); padding: 16px 18px; display: grid; gap: 10px; }
+.safety h3 { color: var(--warn); }
+ul.tight { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80ch; }
+.qs { counter-reset: q; list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.qs li { counter-increment: q; display: grid; grid-template-columns: 34px 1fr; gap: 8px; }
+.qs li::before { content: "F" counter(q); font: 500 12px/1.6 var(--f-mono); color: var(--muted); }
+.note { font-size: 13px; color: var(--muted); max-width: 90ch; }
+</style>
+
+<div class="wrap">
+
+  <header class="titleblock">
+    <div>
+      <div class="label">Projekt · Konzeptphase</div>
+      <h1>THOR</h1>
+      <p class="sub">Turbinengestützter Hochleistungsoxidationsreaktor. Hackschnitzelfeuerung unter Ladedruck, Brennkammer aus einem 50-l-Bierkeg, Wärmeauskopplung über Kühlmäntel bis in den Schalldämpfer.</p>
+    </div>
+    <div class="tb-grid" aria-label="Schriftfeld">
+      <div><span>Zeichnungs-Nr.</span>THOR-K-001</div>
+      <div><span>Rev.</span>A</div>
+      <div><span>Blatt</span>1 / 1</div>
+      <div><span>Ziel</span>300 kW Wärme</div>
+      <div><span>Maßstab</span>o. M.</div>
+      <div><span>Datum</span>2026-10-13</div>
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <div class="label">Blatt 1 · Fließschema</div>
+      <h2>Anlagenschema</h2>
+    </div>
+    <p>Der Verdichter des Turboladers drückt Frischluft in die Brennkammer. Hinter dem Verdichter wird ein Teil der Ladeluft abgezweigt: Sie trägt die Hackschnitzel aus der Schleuse in den Brennraum. Das heiße Abgas treibt die Turbine und damit den Verdichter an. Danach gibt es seine Restwärme im Abgasrohr und im Schalldämpfer-Wärmetauscher ab.</p>
+
+    <div class="sheet">
+      <svg viewBox="0 0 1000 620" role="img" aria-label="Fließschema THOR: Luft, Brennstoff, Abgas und Kühlwasser">
+        <defs>
+          <marker id="a-air" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-air"/></marker>
+          <marker id="a-gas" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-gas"/></marker>
+          <marker id="a-fuel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-fuel"/></marker>
+          <marker id="a-water" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-water"/></marker>
+        </defs>
+
+        <!-- Ansaugung -->
+        <path d="M8,80 H38" class="air" marker-end="url(#a-air)"/>
+        <rect x="40" y="62" width="70" height="36" class="comp"/>
+        <text x="75" y="84" class="t-c">Filter</text>
+        <text x="75" y="52" class="t-s t-c">Ansaugung</text>
+        <path d="M110,80 H426" class="air" marker-end="url(#a-air)"/>
+
+        <!-- Anfahrgebläse -->
+        <rect x="250" y="122" width="110" height="34" class="comp"/>
+        <text x="305" y="143" class="t-c">Anfahrgebläse</text>
+        <path d="M305,122 V88" class="air" stroke-dasharray="5 3" marker-end="url(#a-air)"/>
+        <circle cx="305" cy="104" r="6" class="comp"/>
+        <path d="M300,108 L310,100" class="dim"/>
+        <text x="316" y="108" class="t-s">Rückschlagklappe</text>
+
+        <!-- Turbolader -->
+        <text x="460" y="34" class="t-b t-c">Verdichter</text>
+        <text x="590" y="34" class="t-b t-c">Turbine</text>
+        <polygon points="430,45 490,62 490,98 430,115" class="turbo"/>
+        <polygon points="560,62 620,45 620,115 560,98" class="turbo"/>
+        <rect x="490" y="76" width="70" height="8" class="shaft"/>
+        <text x="525" y="70" class="t-s t-c">Welle</text>
+        <text x="525" y="130" class="t-s t-c">Öl + Kühlung</text>
+
+        <!-- Ladeluft: Hauptluft -->
+        <path d="M460,115 V170 H400 V290 H441" class="air" marker-end="url(#a-air)"/>
+        <text x="392" y="188" class="t-e">Ladeluft ≈ 0,6 bar Ü · ~80 °C</text>
+        <text x="392" y="282" class="t-e">Sekundärluft, tangential</text>
+        <!-- Zapfluft / Förderluft -->
+        <path d="M400,170 H230 V430 H441" class="air" marker-end="url(#a-air)"/>
+        <circle cx="400" cy="170" r="4.5" class="dot"/>
+        <text x="218" y="300" class="t-c" transform="rotate(-90 218 300)">Zapfluft = Förderluft · 30–40 %</text>
+
+        <!-- Bunker + Schleuse -->
+        <polygon points="275,310 385,310 352,368 308,368" class="bunker"/>
+        <text x="330" y="337" class="t-c">Bunker</text>
+        <path d="M330,368 V384" class="fuel"/>
+        <circle cx="330" cy="400" r="16" class="comp"/>
+        <path d="M330,386 V414 M316,400 H344 M320,390 L340,410 M340,390 L320,410" class="dim"/>
+        <text x="352" y="404" class="">Schleuse</text>
+        <path d="M330,416 V426" class="fuel" marker-end="url(#a-fuel)"/>
+        <text x="425" y="452" class="t-s t-e">Förderluft + Hackschnitzel → Injektor</text>
+
+        <!-- Brennkammer (Keg) -->
+        <rect x="430" y="230" width="180" height="300" rx="10" class="jacket"/>
+        <rect x="445" y="245" width="150" height="270" rx="8" class="keg"/>
+        <rect x="455" y="255" width="130" height="250" rx="4" class="lining"/>
+        <rect x="467" y="267" width="106" height="226" rx="2" class="zone"/>
+        <ellipse cx="520" cy="360" rx="38" ry="16" class="swirl"/>
+        <ellipse cx="520" cy="360" rx="22" ry="9" class="swirl"/>
+        <path d="M478,470 Q520,446 562,470 Z" class="ember"/>
+        <path d="M467,472 H573" class="grate" stroke-dasharray="6 3"/>
+        <text x="520" y="292" class="t-b t-c">Brennkammer</text>
+        <text x="520" y="308" class="t-s t-c">50-l-Keg · Ø 408 × 600</text>
+        <text x="520" y="398" class="t-s t-c">Wirbelzone</text>
+        <text x="520" y="488" class="t-s t-c">Rost</text>
+
+        <!-- Vorlauf -->
+        <path d="M480,230 V198" class="water" marker-end="url(#a-water)"/>
+        <text x="488" y="208" class="">VL</text>
+
+        <!-- Asche -->
+        <path d="M520,530 V542" class="fuel"/>
+        <circle cx="520" cy="556" r="14" class="comp"/>
+        <path d="M520,543 V569 M507,556 H533" class="dim"/>
+        <text x="542" y="560" class="">Ascheschleuse</text>
+        <rect x="495" y="576" width="50" height="26" class="comp"/>
+        <text x="520" y="593" class="t-s t-c">Asche</text>
+
+        <!-- Startbrenner -->
+        <rect x="645" y="330" width="104" height="36" class="comp"/>
+        <text x="697" y="345" class="t-c">Startbrenner</text>
+        <text x="697" y="359" class="t-s t-c">Propan, Zündung</text>
+        <path d="M645,348 H600" class="gas" stroke-width="2" marker-end="url(#a-gas)"/>
+
+        <!-- Heißgas: Keg -> NBK -> Zyklon -> Turbine -->
+        <path d="M560,230 V170 H676" class="insul"/>
+        <path d="M700,150 V135 H590 V118" class="insul"/>
+        <rect x="590" y="157" width="70" height="26" class="nbk"/>
+        <path d="M560,230 V170 H676" class="gas" marker-end="url(#a-gas)"/>
+        <text x="625" y="152" class="t-s t-c t-gas">Nachbrennkammer*</text>
+        <rect x="680" y="150" width="40" height="40" class="comp"/>
+        <polygon points="680,190 720,190 704,226 696,226" class="comp"/>
+        <rect x="692" y="228" width="16" height="14" class="comp"/>
+        <text x="730" y="168" class="">Heißgas-</text>
+        <text x="730" y="182" class="">zyklon</text>
+        <text x="716" y="254" class="t-s">Staub</text>
+        <path d="M700,150 V135 H590 V119" class="gas" marker-end="url(#a-gas)"/>
+        <text x="660" y="128" class="t-s t-c t-gas">TIT ≤ 900 °C</text>
+        <text x="568" y="212" class="t-s">isoliert,</text>
+        <text x="568" y="224" class="t-s">nicht gekühlt</text>
+
+        <!-- Abgas nach Turbine (Rohr mit Kühlmantel) -->
+        <path d="M620,80 H800 V290" class="pjacket-edge"/>
+        <path d="M620,80 H800 V290" class="pjacket"/>
+        <path d="M620,80 H800 V302" class="gas" marker-end="url(#a-gas)"/>
+        <text x="632" y="64" class="">Abgas ≈ 840 °C · Rohr mit Kühlmantel</text>
+
+        <!-- Schalldämpfer-Wärmetauscher -->
+        <rect x="760" y="290" width="220" height="130" rx="8" class="jacket"/>
+        <rect x="775" y="305" width="190" height="100" rx="4" class="comp"/>
+        <path d="M838,305 V385 M902,325 V405" class="grate" stroke-width="1.5"/>
+        <text x="806" y="360" class="t-s t-c">K1</text>
+        <text x="870" y="360" class="t-s t-c">K2</text>
+        <text x="934" y="360" class="t-s t-c">K3</text>
+        <text x="867" y="244" class="t-c">Schalldämpfer-</text>
+        <text x="867" y="259" class="t-c">Wärmetauscher</text>
+        <text x="867" y="276" class="t-s t-c">3 Kammern, Mantel</text>
+        <!-- Kamin -->
+        <path d="M935,305 V140" class="gas" stroke-width="2.5" marker-end="url(#a-gas)"/>
+        <text x="946" y="180" class="">Kamin</text>
+        <text x="946" y="195" class="t-s">≈110 °C</text>
+        <!-- Kondensat + Rücklauf -->
+        <path d="M955,420 V470" class="water" stroke-dasharray="3 3" marker-end="url(#a-water)"/>
+        <text x="955" y="487" class="t-s t-c">Kondensat</text>
+        <path d="M790,500 V424" class="water" marker-end="url(#a-water)"/>
+        <text x="798" y="500" class="">RL</text>
+      </svg>
+    </div>
+
+    <div class="legend">
+      <span><i style="border-color: var(--air)"></i>Luft</span>
+      <span><i style="border-color: var(--fuel)"></i>Brennstoff / Asche</span>
+      <span><i style="border-color: var(--gas)"></i>Heißgas / Abgas</span>
+      <span><i style="border-color: var(--water)"></i>Kühlwasser (VL Vorlauf, RL Rücklauf)</span>
+      <span><i style="border-color: var(--rule); border-top-width: 8px"></i>Isolierung</span>
+    </div>
+    <div class="chain" aria-label="Reihenfolge des Kühlwassers">
+      <em>Kühlwasser im Gegenstrom:</em>
+      <b>RL ~65 °C</b><em>→</em><b>Schalldämpfer-Mantel</b><em>→</em><b>Abgasrohr-Mantel</b><em>→</em><b>Brennkammer-Mantel</b><em>→</em><b>VL ~85 °C</b>
+    </div>
+    <p class="note">* Die Nachbrennkammer ist mein Vorschlag und nicht Teil deines Grundkonzepts. Warum sie nötig ist, steht im Machbarkeits-Check unter Punkt 1. TIT = Turbineneintrittstemperatur.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="label">Blatt 1 · Detail A</div>
+      <h2>Brennkammer im Schnitt</h2>
+    </div>
+    <p>Das Keg ist innen mit Feuerbeton ausgekleidet und außen von einem Wassermantel umgeben. Die Hackschnitzel werden tangential eingeblasen und kreisen in der Wirbelzone. Grobe Stücke fallen auf den Rost und brennen dort als Glutbett aus.</p>
+    <div class="sheet narrow">
+      <svg viewBox="0 0 640 600" role="img" aria-label="Schnitt durch die Keg-Brennkammer mit Maßen">
+        <defs>
+          <marker id="d-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" class="m-dim"/></marker>
+          <marker id="b-air" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-air"/></marker>
+          <marker id="b-fuel" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-fuel"/></marker>
+          <marker id="b-gas" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="m-gas"/></marker>
+        </defs>
+        <!-- Mantel, Keg, Auskleidung -->
+        <rect x="136" y="70" width="328" height="441" rx="6" class="jacket"/>
+        <rect x="157" y="70" width="286" height="420" rx="4" class="keg"/>
+        <rect x="160" y="72" width="280" height="415" class="lining"/>
+        <rect x="192" y="72" width="216" height="383" class="zone"/>
+        <!-- Deckel + Abgang -->
+        <rect x="146" y="58" width="308" height="12" class="comp"/>
+        <rect x="254" y="20" width="92" height="38" class="comp"/>
+        <path d="M300,140 V14" class="gas" marker-end="url(#b-gas)"/>
+        <text x="356" y="40" class="">Abgang DN 125 → Nachbrennkammer</text>
+        <!-- Wirbel + Glutbett + Rost -->
+        <ellipse cx="300" cy="230" rx="88" ry="34" class="swirl"/>
+        <ellipse cx="300" cy="230" rx="52" ry="18" class="swirl"/>
+        <text x="300" y="296" class="t-b t-c">Wirbelzone</text>
+        <text x="300" y="312" class="t-s t-c">Ø ≈ 308 innen · ≈ 34 l Nutzvolumen</text>
+        <path d="M205,400 Q300,362 395,400 Z" class="ember"/>
+        <text x="300" y="393" class="t-s t-c">Glutbett</text>
+        <path d="M192,400 H408" class="grate"/>
+        <path d="M210,400 v6 M230,400 v6 M250,400 v6 M270,400 v6 M290,400 v6 M310,400 v6 M330,400 v6 M350,400 v6 M370,400 v6 M390,400 v6" class="grate" stroke-width="1.5"/>
+        <text x="300" y="440" class="t-s t-c">Ascheraum</text>
+        <!-- Asche -->
+        <rect x="285" y="455" width="30" height="80" class="comp"/>
+        <path d="M300,470 V548" class="fuel" marker-end="url(#b-fuel)"/>
+        <text x="322" y="530" class="t-s">Asche → Schleuse</text>
+        <!-- Zuführungen -->
+        <path d="M30,330 H200" class="fuel" marker-end="url(#b-fuel)"/>
+        <text x="12" y="318" class="">Brennstoff</text>
+        <text x="12" y="350" class="t-s">DN 50–65, tang.</text>
+        <path d="M560,200 H400" class="air" marker-end="url(#b-air)"/>
+        <text x="472" y="190" class="">Sekundärluft</text>
+        <text x="472" y="218" class="t-s">tangential</text>
+        <path d="M540,430 H400" class="air" marker-end="url(#b-air)"/>
+        <text x="472" y="420" class="">Primärluft</text>
+        <text x="472" y="448" class="t-s">unter Rost</text>
+        <!-- Kühlwasser -->
+        <path d="M440,104 H520" class="water"/>
+        <text x="476" y="96" class="">VL</text>
+        <path d="M520,500 H468" class="water"/>
+        <text x="476" y="520" class="">RL</text>
+        <!-- Beschriftung links mit Hinweislinien -->
+        <text x="12" y="140" class="">Wassermantel 30 mm</text>
+        <path d="M128,144 H146" class="dim"/>
+        <text x="12" y="236" class="">Keg-Wand Edelstahl</text>
+        <path d="M128,240 H157" class="dim"/>
+        <text x="12" y="420" class="">Auskleidung 50 mm</text>
+        <path d="M128,424 H176" class="dim"/>
+        <!-- Maße unten -->
+        <path d="M157,512 V566 M443,512 V566" class="ext"/>
+        <path d="M159,560 H441" class="dim" marker-start="url(#d-end)" marker-end="url(#d-end)"/>
+        <text x="230" y="555" class="t-c">Ø 408</text>
+        <path d="M136,512 V594 M464,512 V594" class="ext"/>
+        <path d="M138,588 H462" class="dim" marker-start="url(#d-end)" marker-end="url(#d-end)"/>
+        <text x="230" y="583" class="t-c">Ø ≈ 470 Mantel</text>
+        <!-- Höhe -->
+        <path d="M444,70 H590 M444,490 H590" class="ext"/>
+        <path d="M580,72 V488" class="dim" marker-start="url(#d-end)" marker-end="url(#d-end)"/>
+        <text x="596" y="280" class="t-c" transform="rotate(-90 596 280)">600 (Keg)</text>
+      </svg>
+    </div>
+    <p class="note">Maße nach dem üblichen 50-l-Euro-Keg (Ø 408 mm, Höhe 600 mm). Bitte an deinem Fass nachmessen. Mantelspalt und Auskleidung sind Startwerte.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="label">Auslegung · Richtwerte</div>
+      <h2>Eckdaten</h2>
+    </div>
+    <p>Grob gerechnet für 300 kW Nutzwärme und Hackschnitzel mit 25 % Wassergehalt (W25). Das sind Größenordnungen für die Konzeptphase, keine fertige Auslegung.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Größe</th><th style="text-align:right">Wert</th><th>Annahme / Bemerkung</th></tr></thead>
+        <tbody>
+          <tr><td>Feuerungswärmeleistung</td><td class="num">≈ 350 kW</td><td>300 kW Nutzwärme bei η ≈ 86 %</td></tr>
+          <tr><td>Brennstoffbedarf</td><td class="num">≈ 95 kg/h</td><td>Heizwert W25 ≈ 3,7 kWh/kg</td></tr>
+          <tr><td>Brennstoffvolumen</td><td class="num">≈ 0,45 Srm/h</td><td>Schüttdichte ≈ 210 kg/m³. Bei Dauerbetrieb sind das rund 11 Srm pro Tag.</td></tr>
+          <tr><td>Verbrennungsluft</td><td class="num">≈ 0,20 kg/s</td><td>≈ 600 m³/h angesaugt, Luftzahl λ ≈ 1,6</td></tr>
+          <tr><td>Turbolader-Klasse</td><td class="num">≈ 26 lb/min</td><td>Etwa ein Lader für 200–250-PS-Benziner, zum Beispiel aus der GT28/GT30-Klasse</td></tr>
+          <tr><td>Ladedruck</td><td class="num">≈ 0,6 bar Ü</td><td>Druckverhältnis ≈ 1,6, Verdichteraustritt ~80 °C</td></tr>
+          <tr><td>Leistung Verdichter / Turbine</td><td class="num">12 / 15 kW</td><td>Bei TIT 900 °C trägt sich der Lader mit Reserve. Ab etwa 600–700 °C TIT kippt das.</td></tr>
+          <tr><td>Rohrweiten</td><td class="num">DN 80 / 125 / 150</td><td>Ladeluft / Heißgas vor Turbine / Abgas nach Turbine</td></tr>
+          <tr><td>Kühlwasser</td><td class="num">≈ 13 m³/h</td><td>Bei 20 K Spreizung, also VL 85 °C und RL 65 °C</td></tr>
+          <tr><td>Asche</td><td class="num">≈ 1 kg/h</td><td>0,5–1,5 % Aschegehalt, dazu Sand und Steine je nach Qualität</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="label">Energiefluss</div>
+      <h2>Wo die Wärme herauskommt</h2>
+    </div>
+    <div class="bar" role="img" aria-label="Aufteilung der Feuerungswärmeleistung">
+      <span class="b1" style="width:30%"></span>
+      <span class="b2" style="width:55%"></span>
+      <span class="b3" style="width:15%"></span>
+    </div>
+    <div class="bar-key">
+      <span>■ Brennkammer-Mantel ≈ 100 kW</span>
+      <span>■ Abgasrohr + Schalldämpfer ≈ 190 kW</span>
+      <span>■ Verluste (Kamin, Abstrahlung, Unverbranntes) ≈ 40–50 kW</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Stelle</th><th style="text-align:right">Leistung</th><th>Bemerkung</th></tr></thead>
+        <tbody>
+          <tr><td>Brennkammer-Mantel</td><td class="num">60–120 kW</td><td>Hängt stark von der Auskleidung ab. Dünner ausgekleidet heißt mehr Wärme im Mantel, aber kälteres Gas für die Turbine.</td></tr>
+          <tr><td>Heißgasstrecke bis Turbine</td><td class="num">≈ 0 kW</td><td>Bewusst isoliert statt gekühlt</td></tr>
+          <tr><td>Turbine → Verdichter</td><td class="num">≈ 15 kW</td><td>Geht als Verdichtungswärme zurück in die Ladeluft und ist kein Verlust</td></tr>
+          <tr><td>Abgasrohr + Schalldämpfer-WT</td><td class="num">≈ 190 kW</td><td>Von ~840 °C auf ~110 °C. Mit Kondensation (unter ~55 °C) wäre noch mehr drin.</td></tr>
+          <tr><td>Kamin</td><td class="num">≈ 20 kW</td><td>Abgas mit 110 °C</td></tr>
+          <tr class="total"><td>Nutzwärme</td><td class="num">≈ 300 kW</td><td>bei ≈ 350 kW Feuerungswärmeleistung</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="label">Prüfung</div>
+      <h2>Machbarkeits-Check</h2>
+    </div>
+    <p>Das Konzept funktioniert im Grundsatz. Ein Turbolader als Gasgenerator ist ein bekanntes Bastler-Prinzip. Fünf Punkte würden aber so, wie beschrieben, nicht aufgehen. Für jeden steht unten ein Lösungsvorschlag.</p>
+    <div class="checks">
+      <div class="check">
+        <div class="no">1</div>
+        <div>
+          <h3>Das Keg ist für 300 kW zu klein</h3>
+          <p>Nach der Auskleidung bleiben etwa 34 l. Das entspricht rund 10 MW pro m³ Feuerraum. Hackschnitzel-Rostfeuerungen liegen grob bei 0,5–1 MW/m³. Das Gas strömt in nur etwa 0,07 s durch das Keg. Für einen sauberen Ausbrand braucht es eher 0,5–1 s. Sonst kommen CO, Teer und glühende Partikel aus der Brennkammer, und das alles geht direkt in die Turbine.</p>
+          <p class="fix"><b>Lösung:</b> Das Keg wird zur Primärzone mit Glutbett und Wirbel. Dahinter kommt eine ausgemauerte Nachbrennkammer mit etwa 250–400 l, in die ein Teil der Sekundärluft geht. Alternativ: mehrere Keg-Module parallel oder ein kleineres Leistungsziel von 60–100 kW pro Keg.</p>
+        </div>
+      </div>
+      <div class="check">
+        <div class="no">2</div>
+        <div>
+          <h3>Die Turbine braucht heißes Gas</h3>
+          <p>Wenn schon die Rohre zwischen Keg und Turbine gekühlt werden, fehlt der Turbine die Energie, um den Verdichter anzutreiben. Dann bricht der Ladedruck zusammen. Gleichzeitig vertragen Serien-Turbolader nur etwa 950–1050 °C am Eintritt.</p>
+          <p class="fix"><b>Lösung:</b> Die Strecke bis zur Turbine wird isoliert und nicht gekühlt. Die Turbineneintrittstemperatur wird gemessen und über Mischluft auf etwa 850–900 °C geregelt. Gekühlt wird ab dem Turbinenaustritt. Dort ist ohnehin der größte Teil der Wärme zu holen.</p>
+        </div>
+      </div>
+      <div class="check">
+        <div class="no">3</div>
+        <div>
+          <h3>Fürs Einblasen braucht es mehr Luft als gedacht</h3>
+          <p>Damit Hackschnitzel pneumatisch fliegen, braucht es etwa 15–25 m/s in einer Leitung, die mindestens dreimal so weit ist wie das längste Stück. "Ein bisschen abzwacken" reicht dafür nicht. Rechnerisch sind es 30–40 % der gesamten Luft.</p>
+          <p class="fix"><b>Lösung:</b> Die Förderluft wird gleichzeitig Primärluft. Feine, gesiebte Hackschnitzel (Klasse P16S) sind Pflicht. Die Förderleitung DN 50–65 kurz halten. In der Hauptluft ein Drosselorgan oder Drallerzeuger einbauen, damit genug Druckunterschied für die Förderung bleibt.</p>
+        </div>
+      </div>
+      <div class="check">
+        <div class="no">4</div>
+        <div>
+          <h3>Asche und Partikel zerstören die Turbine</h3>
+          <p>Das Turbinenrad dreht mit über 100.000 U/min. Ascheteilchen und Sand wirken darauf wie ein Sandstrahl, und glühende Funken entzünden sich im Abgas neu.</p>
+          <p class="fix"><b>Lösung:</b> Vor der Turbine einen Heißgaszyklon mit Staubaustrag einbauen, der ebenfalls unter Druck steht. Zusätzlich die Turbine regelmäßig per Endoskop prüfen.</p>
+        </div>
+      </div>
+      <div class="check">
+        <div class="no">5</div>
+        <div>
+          <h3>Alles unter Druck braucht Schleusen</h3>
+          <p>Der Feuerraum steht unter Überdruck. Deshalb braucht nicht nur der Brennstoff eine Schleuse, sondern auch der Ascheaustrag und der Zyklonstaub.</p>
+          <p class="fix"><b>Lösung:</b> Ascheschleuse unter dem Rost (siehe Schema) und Staubtopf am Zyklon mit Doppelschieber.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="safety">
+      <div class="label" style="color: var(--warn)">Sicherheit · nicht verhandelbar</div>
+      <h3>Was bei 300 kW unbedingt dazugehört</h3>
+      <ul class="tight">
+        <li><b>Wassermäntel nie geschlossen ohne Absicherung:</b> Ein gekühlter Mantel an einer 1000-°C-Brennkammer ist ein Dampfkessel. Pflicht sind Sicherheitsventil (max. 3 bar), Sicherheitstemperaturbegrenzer (110 °C), Ausdehnungsgefäß und thermische Ablaufsicherung, wie in DIN EN 12828. Die Pumpe wird überwacht, und bei Stromausfall muss die Restwärme weg können.</li>
+        <li><b>Rückbrand in Bunker und Förderleitung:</b> Die Schleuse muss druckdicht sein und darf nie offen durchschlagen. Dazu kommen ein Temperaturwächter an der Förderleitung und eine Löscheinrichtung wie bei handelsüblichen Hackschnitzelkesseln.</li>
+        <li><b>Druckfeuerraum:</b> Jede Undichtheit bläst Rauchgas mit CO in den Raum. Deshalb dichte Flansche, CO-Melder im Aufstellraum und eine Explosionsklappe oder Berstscheibe am Feuerraum gegen Verpuffung.</li>
+        <li><b>Turbolader:</b> Eigener Ölkreis mit Vorschmierung und Nachlauf nach dem Abschalten. Dazu Wastegate oder Abblaseventil gegen Überdrehzahl, Messung der Turbineneintrittstemperatur und ein Berstschutz um den Lader.</li>
+        <li><b>Abschaltlogik:</b> Flammenüberwachung, Not-Aus mit sofortigem Brennstoff-Stopp, definierter Auslauf des Laders und Abfuhr der Restwärme.</li>
+        <li><b>Zulassung:</b> Eine Holzfeuerung mit 300 kW fällt unter die 1. BImSchV mit Emissionsgrenzwerten und Messungen durch den Schornsteinfeger. Bezirksschornsteinfeger und gegebenenfalls Bauamt sollten früh eingebunden werden, bevor Geld in Teile fließt.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="label">Nächster Schritt</div>
+      <h2>Die Brennstoffschleuse</h2>
+    </div>
+    <p>Die Schleuse ist das Herzstück für den Dauerbetrieb. Sie muss gegen etwa 0,6 bar abdichten, darf mit Hackschnitzeln nicht verklemmen und darf keinen Rückbrand durchlassen. Diese drei Bauarten kommen in Frage:</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Bauart</th><th>Vorteile</th><th>Nachteile</th></tr></thead>
+        <tbody>
+          <tr><td><b>Zellenradschleuse</b> (druckfest)</td><td>Kontinuierlich, einfach zu dosieren, als Industrieteil erhältlich</td><td>Leckluft, Überlängen verklemmen die Zellen, verschleißt bei Sand</td></tr>
+          <tr><td><b>Doppelklappen-Schleuse</b></td><td>Robust, gut druckdicht, verträgt grobes Material, selbst baubar</td><td>Arbeitet taktweise, braucht danach eine Dosierschnecke, zwei Antriebe und eine Verriegelung</td></tr>
+          <tr><td><b>Stopfschnecke</b> (Pfropfenschnecke)</td><td>Der verdichtete Brennstoff dichtet selbst ab. Bewährt bei Druckvergasern.</td><td>Hohe Antriebsleistung, aufwendiger Bau, empfindlich bei wechselnder Feuchte</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Für einen Eigenbau tendiere ich zur Doppelklappen-Schleuse mit nachgeschalteter Dosierschnecke. Die Schnecke gibt den Brennstoff in den Injektor. Das besprechen wir im nächsten Schritt genauer.</p>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <div class="label">Klärung</div>
+      <h2>Offene Fragen</h2>
+    </div>
+    <ol class="qs">
+      <li>Sind die 300 kW als Nutzwärme gemeint oder als Feuerungsleistung?</li>
+      <li>Wofür ist die Wärme gedacht: Heizung, Trocknung, Prozesswärme? Läuft die Anlage im Dauer- oder im Taktbetrieb?</li>
+      <li>Welche Hackschnitzel hast du (Holzart, Wassergehalt, Stückgröße)? Wie viel Siebaufwand ist für dich okay?</li>
+      <li>Hast du schon einen Turbolader? Wenn ja, welches Modell?</li>
+      <li>Kommen die Nachbrennkammer und der Heißgaszyklon für dich in Frage, oder soll das Keg die einzige Brennkammer bleiben? Dann würde ich die Leistung herunterskalieren.</li>
+      <li>Wie soll die Anlage gesteuert werden: SPS, Arduino oder ESP32, oder von Hand?</li>
+    </ol>
+  </section>
+
+</div>
