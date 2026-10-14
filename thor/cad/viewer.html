@@ -1,0 +1,179 @@
+<title>THOR 3D-Modell</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: Vollflächiger 3D-Viewport, Kopfzeile mit Schriftfeld-Anmutung, Bauteilliste rechts (unten auf dem Handy) */
+:root {
+  --paper: #eef1f1; --sheet: #ffffff; --ink: #172026; --muted: #56656c; --rule: #c7d0d4;
+  --accent: #c04a14; --water: #0e7c74; --view: #e3e8e9;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --paper: #0f1518; --sheet: #151e22; --ink: #e2e9eb; --muted: #95a5ac; --rule: #2c3a41; --accent: #f08a4b; --water: #4ec5b9; --view: #1a2428; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --paper: #0f1518; --sheet: #151e22; --ink: #e2e9eb; --muted: #95a5ac; --rule: #2c3a41; --accent: #f08a4b; --water: #4ec5b9; --view: #1a2428; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--paper); color: var(--ink); font: 14px/1.5 var(--f-body); }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; padding-inline: 16px; padding-block: 12px; gap: 12px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; border-bottom: 2px solid var(--ink); padding-bottom: 8px; }
+h1 { margin: 0; font: 700 32px/1 var(--f-display); letter-spacing: 0.01em; }
+.meta { font: 12px var(--f-mono); color: var(--muted); }
+.main { display: grid; grid-template-columns: 1fr 260px; gap: 12px; min-height: 0; }
+.stage { position: relative; background: var(--view); border: 1.5px solid var(--ink); min-height: 320px; min-width: 0; }
+canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.tools { position: absolute; left: 10px; top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: 500 12px var(--f-mono); color: var(--ink); background: var(--sheet); border: 1px solid var(--ink); padding: 6px 10px; cursor: pointer; }
+button[aria-pressed="false"] { color: var(--muted); border-color: var(--rule); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pick { position: absolute; left: 10px; bottom: 10px; font: 12px var(--f-mono); background: var(--sheet); border: 1px solid var(--rule); padding: 6px 10px; }
+.pick b { color: var(--accent); font-weight: 500; }
+.status[hidden] { display: none; }
+.status { position: absolute; inset: 0; display: grid; place-items: center; font: 13px var(--f-mono); color: var(--muted); pointer-events: none; }
+aside { background: var(--sheet); border: 1px solid var(--rule); overflow: auto; min-height: 0; }
+aside h2 { margin: 0; padding: 10px 12px; font: 500 11px var(--f-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--sheet); }
+aside ul { list-style: none; margin: 0; padding: 4px 0; }
+aside li button { width: 100%; text-align: left; border: 0; background: none; padding: 4px 12px; display: flex; gap: 8px; align-items: center; }
+aside li button:hover, aside li button.on { background: var(--view); }
+aside li i { width: 10px; height: 10px; flex: none; border: 1px solid var(--rule); }
+@media (max-width: 760px) { .main { grid-template-columns: 1fr; grid-template-rows: 60vh 220px; } }
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <div class="meta">THOR-M-001 · Rev. A · Konzeptmodell · Maße in mm</div>
+      <h1>THOR 3D-Modell</h1>
+    </div>
+    <div class="meta">Ziehen: drehen · Rechtsklick/zwei Finger: verschieben · Mausrad: zoomen · Klick: Bauteil</div>
+  </header>
+  <div class="main">
+    <div class="stage" id="stage">
+      <canvas id="c"></canvas>
+      <div class="tools">
+        <button id="b-jacket" aria-pressed="true">Kühlmäntel</button>
+        <button id="b-insul" aria-pressed="true">Isolierung</button>
+        <button id="b-reset">Ansicht zurücksetzen</button>
+      </div>
+      <div class="pick" id="pick">Klicke auf ein Bauteil</div>
+      <div class="status" id="status">Modell wird geladen …</div>
+    </div>
+    <aside>
+      <h2>Bauteile</h2>
+      <ul id="parts"></ul>
+    </aside>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  const NAMES = {
+    Keg_50l: "Keg 50 l (Brennkammer)", Auskleidung: "Feuerfest-Auskleidung", Wassermantel_Brennkammer: "Wassermantel Brennkammer",
+    Deckel: "Deckel", Rost: "Rost", Glutbett: "Glutbett", Nachbrennkammer: "Nachbrennkammer", NBK_Ausmauerung: "Ausmauerung NBK",
+    Heissgas_Keg_NBK_isoliert: "Heißgas Keg → NBK (isoliert)", Heissgas_NBK_Turbine_isoliert: "Heißgas NBK → Turbine (isoliert)",
+    Turbinengehaeuse: "Turbinengehäuse", Lagergehaeuse_Oel: "Lagergehäuse (Öl)", Verdichtergehaeuse: "Verdichtergehäuse",
+    Frischluft_Einlauf: "Frischluft-Einlauf", Schutzgitter: "Schutzgitter", Anfahr_Leitung: "Anfahrleitung",
+    Rueckschlagklappe: "Rückschlagklappe", Anfahrgeblaese: "Anfahrgebläse", Ladeluft_Sekundaerluft: "Ladeluft → Sekundärluft",
+    Zapfluft_Foerderleitung: "Zapfluft / Förderleitung", T_Stueck: "T-Stück Zapfluft", Injektor: "Injektor",
+    Bunker_Hackschnitzel: "Bunker Hackschnitzel", Bunker_Auslauf: "Bunkerauslauf", Schleuse: "Brennstoffschleuse",
+    Schleuse_Antrieb: "Schleusenantrieb", Fallrohr: "Fallrohr", Ascheaustrag: "Ascheaustrag", Ascheschleuse: "Ascheschleuse",
+    Aschebehaelter: "Aschebehälter", Startbrenner_Rohr: "Startbrenner-Rohr", Startbrenner_Propan: "Startbrenner (Propan)",
+    Abgasrohr_Kuehlmantel: "Abgasrohr-Kühlmantel", Abgasrohr_innen: "Abgasrohr", Schalldaempfer_WT_3_Kammern: "Schalldämpfer-WT (3 Kammern)",
+    Schalldaempfer_Kuehlmantel: "Kühlmantel Schalldämpfer", Kamin: "Kamin", Kondensatablauf: "Kondensatablauf",
+    VL_Vorlauf: "Vorlauf (VL)", RL_Ruecklauf: "Rücklauf (RL)"
+  };
+  const stage = document.getElementById("stage"), canvas = document.getElementById("c");
+  const status = document.getElementById("status"), pick = document.getElementById("pick");
+  if (!window.THREE || !THREE.GLTFLoader) { status.textContent = "3D-Bibliothek konnte nicht geladen werden."; return; }
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, 1, 10, 50000);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9499, 1.4));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.1); sun.position.set(3000, 5000, 5000); scene.add(sun);
+  const fill = new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-4000, 2000, -3000); scene.add(fill);
+
+  let home = null; const parts = []; const groups = { jacket: [], insul: [] };
+  let selected = null;
+
+  function resize() {
+    const r = stage.getBoundingClientRect();
+    renderer.setSize(r.width, r.height, false);
+    camera.aspect = r.width / Math.max(r.height, 1); camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  function select(obj) {
+    if (selected) selected.traverse(m => { if (m.isMesh) m.material.emissive.setHex(0x000000); });
+    document.querySelectorAll("aside li button").forEach(b => b.classList.toggle("on", obj && b.dataset.name === obj.name));
+    selected = obj;
+    if (!obj) { pick.textContent = "Klicke auf ein Bauteil"; return; }
+    obj.traverse(m => { if (m.isMesh) m.material.emissive.setHex(0x553311); });
+    pick.innerHTML = "Bauteil: <b></b>"; pick.querySelector("b").textContent = NAMES[obj.name] || obj.name;
+  }
+
+  new THREE.GLTFLoader().load("thor.glb", gltf => {
+    const root = gltf.scene; scene.add(root);
+    root.children[0] && root.children[0].children.forEach(addPart);
+    if (!parts.length) root.children.forEach(addPart);
+    const box = new THREE.Box3().setFromObject(root), c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3()).length();
+    const grid = new THREE.GridHelper(6000, 30, 0x8a9499, 0xb9c3c7); grid.position.set(c.x, box.min.y, c.z);
+    grid.material.transparent = true; grid.material.opacity = 0.35; scene.add(grid);
+    camera.position.set(c.x + s * 0.55, c.y + s * 0.35, c.z + s * 0.85);
+    controls.target.copy(c); controls.update();
+    home = { p: camera.position.clone(), t: c.clone() };
+    status.hidden = true;
+  }, undefined, () => { status.textContent = "Modell konnte nicht geladen werden."; });
+
+  function addPart(obj) {
+    parts.push(obj);
+    obj.traverse(m => {
+      if (!m.isMesh) return;
+      m.material = m.material.clone(); m.material.side = THREE.DoubleSide;
+      if (m.material.opacity < 1) { m.material.transparent = true; m.material.depthWrite = false; }
+    });
+    if (/mantel/i.test(obj.name)) groups.jacket.push(obj);
+    if (/isoliert|Nachbrennkammer$/.test(obj.name)) groups.insul.push(obj);
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.dataset.name = obj.name;
+    let col = "#999"; obj.traverse(m => { if (m.isMesh) col = "#" + m.material.color.getHexString(); });
+    b.innerHTML = '<i style="background:' + col + '"></i><span></span>';
+    b.querySelector("span").textContent = NAMES[obj.name] || obj.name;
+    b.addEventListener("click", () => select(obj));
+    li.appendChild(b); document.getElementById("parts").appendChild(li);
+  }
+
+  function toggle(btn, list) {
+    const on = btn.getAttribute("aria-pressed") !== "true";
+    btn.setAttribute("aria-pressed", String(on)); list.forEach(o => o.visible = on);
+  }
+  document.getElementById("b-jacket").onclick = e => toggle(e.currentTarget, groups.jacket);
+  document.getElementById("b-insul").onclick = e => toggle(e.currentTarget, groups.insul);
+  document.getElementById("b-reset").onclick = () => { if (home) { camera.position.copy(home.p); controls.target.copy(home.t); controls.update(); } };
+
+  const ray = new THREE.Raycaster(), ptr = new THREE.Vector2(); let down = null;
+  canvas.addEventListener("pointerdown", e => down = [e.clientX, e.clientY]);
+  canvas.addEventListener("pointerup", e => {
+    if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 4) return;
+    const r = canvas.getBoundingClientRect();
+    ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ptr, camera);
+    const hit = ray.intersectObjects(parts.filter(p => p.visible), true).find(h => h.object.material.opacity >= 0.5) ||
+                ray.intersectObjects(parts.filter(p => p.visible), true)[0];
+    if (!hit) return select(null);
+    let o = hit.object; while (o && !parts.includes(o)) o = o.parent; select(o);
+  });
+
+  (function loop() { controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); })();
+})();
+</script>
