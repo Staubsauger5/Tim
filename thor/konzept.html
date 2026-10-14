@@ -167,11 +167,8 @@ ul.tight { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80
         </defs>
 
         <!-- Ansaugung -->
-        <path d="M8,80 H38" class="air" marker-end="url(#a-air)"/>
-        <rect x="40" y="62" width="70" height="36" class="comp"/>
-        <text x="75" y="84" class="t-c">Filter</text>
-        <text x="75" y="52" class="t-s t-c">Ansaugung</text>
-        <path d="M110,80 H426" class="air" marker-end="url(#a-air)"/>
+        <text x="20" y="70" class="">Frischluft</text>
+        <path d="M20,80 H426" class="air" marker-end="url(#a-air)"/>
 
         <!-- Anfahrgebläse -->
         <rect x="250" y="122" width="110" height="34" class="comp"/>
@@ -192,7 +189,7 @@ ul.tight { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80
 
         <!-- Ladeluft: Hauptluft -->
         <path d="M460,115 V170 H400 V290 H441" class="air" marker-end="url(#a-air)"/>
-        <text x="392" y="188" class="t-e">Ladeluft ≈ 0,6 bar Ü · ~80 °C</text>
+        <text x="392" y="188" class="t-e">Ladeluft 0,6 bar Ü, ~80 °C</text>
         <text x="392" y="282" class="t-e">Sekundärluft, tangential</text>
         <!-- Zapfluft / Förderluft -->
         <path d="M400,170 H230 V430 H441" class="air" marker-end="url(#a-air)"/>
@@ -241,19 +238,14 @@ ul.tight { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80
         <text x="697" y="359" class="t-s t-c">Propan, Zündung</text>
         <path d="M645,348 H600" class="gas" stroke-width="2" marker-end="url(#a-gas)"/>
 
-        <!-- Heißgas: Keg -> NBK -> Zyklon -> Turbine -->
-        <path d="M560,230 V170 H676" class="insul"/>
-        <path d="M700,150 V135 H590 V118" class="insul"/>
+        <!-- Heißgas: Keg -> NBK -> (Zyklon optional) -> Turbine -->
+        <path d="M560,230 V170 H700 V135 H590 V118" class="insul"/>
         <rect x="590" y="157" width="70" height="26" class="nbk"/>
-        <path d="M560,230 V170 H676" class="gas" marker-end="url(#a-gas)"/>
+        <path d="M688,160 H712 V182 L704,198 H696 L688,182 Z" class="nbk" stroke="var(--muted)"/>
+        <path d="M560,230 V170 H700 V135 H590 V119" class="gas" marker-end="url(#a-gas)"/>
         <text x="625" y="152" class="t-s t-c t-gas">Nachbrennkammer*</text>
-        <rect x="680" y="150" width="40" height="40" class="comp"/>
-        <polygon points="680,190 720,190 704,226 696,226" class="comp"/>
-        <rect x="692" y="228" width="16" height="14" class="comp"/>
-        <text x="730" y="168" class="">Heißgas-</text>
-        <text x="730" y="182" class="">zyklon</text>
-        <text x="716" y="254" class="t-s">Staub</text>
-        <path d="M700,150 V135 H590 V119" class="gas" marker-end="url(#a-gas)"/>
+        <text x="722" y="168" class="t-s">Zyklon</text>
+        <text x="722" y="181" class="t-s">optional**</text>
         <text x="660" y="128" class="t-s t-c t-gas">TIT ≤ 900 °C</text>
         <text x="568" y="212" class="t-s">isoliert,</text>
         <text x="568" y="224" class="t-s">nicht gekühlt</text>
@@ -297,6 +289,7 @@ ul.tight { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80
       <em>Kühlwasser im Gegenstrom:</em>
       <b>RL ~65 °C</b><em>→</em><b>Schalldämpfer-Mantel</b><em>→</em><b>Abgasrohr-Mantel</b><em>→</em><b>Brennkammer-Mantel</b><em>→</em><b>VL ~85 °C</b>
     </div>
+    <p class="note">** Der Zyklon ist vorerst nicht geplant. Er kann bei Turbinenverschleiß nachgerüstet werden.</p>
     <p class="note">* Die Nachbrennkammer ist mein Vorschlag und nicht Teil deines Grundkonzepts. Warum sie nötig ist, steht im Machbarkeits-Check unter Punkt 1. TIT = Turbineneintrittstemperatur.</p>
   </section>
 
@@ -467,15 +460,15 @@ ul.tight { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80
         <div>
           <h3>Asche und Partikel zerstören die Turbine</h3>
           <p>Das Turbinenrad dreht mit über 100.000 U/min. Ascheteilchen und Sand wirken darauf wie ein Sandstrahl, und glühende Funken entzünden sich im Abgas neu.</p>
-          <p class="fix"><b>Lösung:</b> Vor der Turbine einen Heißgaszyklon mit Staubaustrag einbauen, der ebenfalls unter Druck steht. Zusätzlich die Turbine regelmäßig per Endoskop prüfen.</p>
+          <p class="fix"><b>Plan:</b> Erst einmal kein Zyklon. Gute Verbrennung und Nachbrennkammer halten Partikel klein, und die Turbine wird regelmäßig per Endoskop geprüft. Zeigt das Turbinenrad Abrieb, wird ein Heißgaszyklon vor der Turbine nachgerüstet. Der Platz dafür ist im Schema vorgesehen.</p>
         </div>
       </div>
       <div class="check">
         <div class="no">5</div>
         <div>
           <h3>Alles unter Druck braucht Schleusen</h3>
-          <p>Der Feuerraum steht unter Überdruck. Deshalb braucht nicht nur der Brennstoff eine Schleuse, sondern auch der Ascheaustrag und der Zyklonstaub.</p>
-          <p class="fix"><b>Lösung:</b> Ascheschleuse unter dem Rost (siehe Schema) und Staubtopf am Zyklon mit Doppelschieber.</p>
+          <p>Der Feuerraum steht unter Überdruck. Deshalb braucht nicht nur der Brennstoff eine Schleuse, sondern auch der Ascheaustrag.</p>
+          <p class="fix"><b>Lösung:</b> Ascheschleuse unter dem Rost (siehe Schema). Falls der Zyklon später kommt, braucht sein Staubtopf einen Doppelschieber.</p>
         </div>
       </div>
     </div>
@@ -525,7 +518,7 @@ ul.tight { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 80
       <li>Wofür ist die Wärme gedacht: Heizung, Trocknung, Prozesswärme? Läuft die Anlage im Dauer- oder im Taktbetrieb?</li>
       <li>Welche Hackschnitzel hast du (Holzart, Wassergehalt, Stückgröße)? Wie viel Siebaufwand ist für dich okay?</li>
       <li>Hast du schon einen Turbolader? Wenn ja, welches Modell?</li>
-      <li>Kommen die Nachbrennkammer und der Heißgaszyklon für dich in Frage, oder soll das Keg die einzige Brennkammer bleiben? Dann würde ich die Leistung herunterskalieren.</li>
+      <li>Kommt die Nachbrennkammer für dich in Frage, oder soll das Keg die einzige Brennkammer bleiben? Dann würde ich die Leistung herunterskalieren.</li>
       <li>Wie soll die Anlage gesteuert werden: SPS, Arduino oder ESP32, oder von Hand?</li>
     </ol>
   </section>
