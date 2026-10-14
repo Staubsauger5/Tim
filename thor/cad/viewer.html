@@ -122,7 +122,7 @@ aside li i { width: 10px; height: 10px; flex: none; border: 1px solid var(--rule
     pick.innerHTML = "Bauteil: <b></b>"; pick.querySelector("b").textContent = NAMES[obj.name] || obj.name;
   }
 
-  new THREE.GLTFLoader().load("thor.glb", gltf => {
+  new THREE.GLTFLoader().load("thor.gltf.json", gltf => {
     const root = gltf.scene; scene.add(root);
     root.children[0] && root.children[0].children.forEach(addPart);
     if (!parts.length) root.children.forEach(addPart);
